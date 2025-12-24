@@ -3,7 +3,7 @@
 pkgbase=linux-renge
 pkgver=6.18.2
 pkgrel=1
-pkgdesc='Custom kernel with lz4 and more!'
+pkgdesc='Linux Renge - Performance optimized gaming kernel with -O3'
 url='https://github.com/RengeOS/Source-Kernel-RengeOS'
 arch=(x86_64)
 license=(GPL-2.0-only)
@@ -35,10 +35,10 @@ sha256sums=(
 
 source=(
   https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/${_srcname}.tar.xz
-  config  # the main kernel config file
+  config
 )
 
-export KBUILD_BUILD_HOST=archlinux
+export KBUILD_BUILD_HOST=rengeos
 export KBUILD_BUILD_USER=$pkgbase
 export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
 
@@ -70,8 +70,15 @@ prepare() {
 
 build() {
   cd $_srcname
-  make all
-  make -C tools/bpf/bpftool vmlinux.h feature-clang-bpf-co-re=1
+  
+  export CFLAGS="-O3 -march=native -mtune=native -pipe -fno-plt -fexceptions -Wp,-D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security -fstack-clash-protection -fcf-protection"
+  export CXXFLAGS="${CFLAGS}"
+  export LDFLAGS="-Wl,-O3,--sort-common,--as-needed,-z,relro,-z,now"
+  export KCFLAGS="-O3 -march=native -mtune=native"
+  export KCPPFLAGS="-O3 -march=native -mtune=native"
+  
+  make LLVM=1 LLVM_IAS=1 all
+  make LLVM=1 LLVM_IAS=1 -C tools/bpf/bpftool vmlinux.h feature-clang-bpf-co-re=1
 }
 
 _package() {
@@ -101,18 +108,13 @@ _package() {
   local modulesdir="$pkgdir/usr/lib/modules/$(<version)"
 
   echo "Installing boot image..."
-  # systemd expects to find the kernel here to allow hibernation
-  # https://github.com/systemd/systemd/commit/edda44605f06a41fb86b7ab8128dcf99161d2344
   install -Dm644 "$(make -s image_name)" "$modulesdir/vmlinuz"
-
-  # Used by mkinitcpio to name the kernel
   echo "$pkgbase" | install -Dm644 /dev/stdin "$modulesdir/pkgbase"
 
   echo "Installing modules..."
-  ZSTD_CLEVEL=19 make INSTALL_MOD_PATH="$pkgdir/usr" INSTALL_MOD_STRIP=1 \
-    DEPMOD=/doesnt/exist modules_install  # Suppress depmod
+  make LLVM=1 LLVM_IAS=1 INSTALL_MOD_PATH="$pkgdir/usr" INSTALL_MOD_STRIP=1 \
+    DEPMOD=/doesnt/exist modules_install
 
-  # remove build link
   rm "$modulesdir"/build
 }
 
@@ -131,10 +133,7 @@ _package-headers() {
   cp -t "$builddir" -a scripts
   ln -srt "$builddir" "$builddir/scripts/gdb/vmlinux-gdb.py"
 
-  # required when STACK_VALIDATION is enabled
   install -Dt "$builddir/tools/objtool" tools/objtool/objtool
-
-  # required when DEBUG_INFO_BTF_MODULES is enabled
   install -Dt "$builddir/tools/bpf/resolve_btfids" tools/bpf/resolve_btfids/resolve_btfids
 
   echo "Installing headers..."
@@ -144,16 +143,10 @@ _package-headers() {
 
   install -Dt "$builddir/drivers/md" -m644 drivers/md/*.h
   install -Dt "$builddir/net/mac80211" -m644 net/mac80211/*.h
-
-  # https://bugs.archlinux.org/task/13146
   install -Dt "$builddir/drivers/media/i2c" -m644 drivers/media/i2c/msp3400-driver.h
-
-  # https://bugs.archlinux.org/task/20402
   install -Dt "$builddir/drivers/media/usb/dvb-usb" -m644 drivers/media/usb/dvb-usb/*.h
   install -Dt "$builddir/drivers/media/dvb-frontends" -m644 drivers/media/dvb-frontends/*.h
   install -Dt "$builddir/drivers/media/tuners" -m644 drivers/media/tuners/*.h
-
-  # https://bugs.archlinux.org/task/71392
   install -Dt "$builddir/drivers/iio/common/hid-sensors" -m644 drivers/iio/common/hid-sensors/*.h
 
   echo "Installing KConfig files..."
@@ -164,8 +157,7 @@ _package-headers() {
   install -Dt "$builddir/rust" rust/*.so
 
   echo "Installing unstripped VDSO..."
-  make INSTALL_MOD_PATH="$pkgdir/usr" vdso_install \
-    link=  # Suppress build-id symlinks
+  make LLVM=1 LLVM_IAS=1 INSTALL_MOD_PATH="$pkgdir/usr" vdso_install link=
 
   echo "Removing unneeded architectures..."
   local arch
@@ -188,13 +180,13 @@ _package-headers() {
   local file
   while read -rd '' file; do
     case "$(file -Sib "$file")" in
-      application/x-sharedlib\;*)      # Libraries (.so)
+      application/x-sharedlib\;*)
         strip -v $STRIP_SHARED "$file" ;;
-      application/x-archive\;*)        # Libraries (.a)
+      application/x-archive\;*)
         strip -v $STRIP_STATIC "$file" ;;
-      application/x-executable\;*)     # Binaries
+      application/x-executable\;*)
         strip -v $STRIP_BINARIES "$file" ;;
-      application/x-pie-executable\;*) # Relocatable binaries
+      application/x-pie-executable\;*)
         strip -v $STRIP_SHARED "$file" ;;
     esac
   done < <(find "$builddir" -type f -perm -u+x ! -name vmlinux -print0)
@@ -207,29 +199,9 @@ _package-headers() {
   ln -sr "$builddir" "$pkgdir/usr/src/$pkgbase"
 }
 
-_package-docs() {
-  pkgdesc="Documentation for the $pkgdesc kernel"
-
-  cd $_srcname
-  local builddir="$pkgdir/usr/lib/modules/$(<version)/build"
-
-  echo "Installing documentation..."
-  local src dst
-  while read -rd '' src; do
-    dst="${src#Documentation/}"
-    dst="$builddir/Documentation/${dst#output/}"
-    install -Dm644 "$src" "$dst"
-  done < <(find Documentation -name '.*' -prune -o ! -type d -print0)
-
-  echo "Adding symlink..."
-  mkdir -p "$pkgdir/usr/share/doc"
-  ln -sr "$builddir/Documentation" "$pkgdir/usr/share/doc/$pkgbase"
-}
-
 pkgname=(
   "$pkgbase"
   "$pkgbase-headers"
-  "$pkgbase-docs"
 )
 for _p in "${pkgname[@]}"; do
   eval "package_$_p() {
@@ -237,5 +209,3 @@ for _p in "${pkgname[@]}"; do
     _package${_p#$pkgbase}
   }"
 done
-
-# vim:set ts=8 sts=2 sw=2 et:
