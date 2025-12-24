@@ -1,4 +1,4 @@
-# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Maintainer: Gia Phu <crystalforceix@gmail.com>
 
 pkgbase=linux-renge
 pkgver=6.18.2
@@ -25,8 +25,8 @@ options=(
   !debug
   !strip
 )
+
 _srcname=linux-${pkgver%.*}
-_srctag=v${pkgver%.*}-${pkgver##*.}
 
 sha256sums=(
   'SKIP'
@@ -72,7 +72,6 @@ build() {
   cd $_srcname
   make all
   make -C tools/bpf/bpftool vmlinux.h feature-clang-bpf-co-re=1
-  make htmldocs SPHINXOPTS=-QT
 }
 
 _package() {
