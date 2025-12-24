@@ -20,6 +20,9 @@ makedepends=(
   rust-src
   tar
   xz
+  llvm
+  clang
+  lld
 )
 options=(
   !debug
