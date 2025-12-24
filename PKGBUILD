@@ -31,7 +31,6 @@ _srctag=v${pkgver%.*}-${pkgver##*.}
 sha256sums=(
   'SKIP'
   'SKIP'
-  'SKIP'
 )
 
 source=(
