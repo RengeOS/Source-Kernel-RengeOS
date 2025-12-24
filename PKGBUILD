@@ -20,13 +20,6 @@ makedepends=(
   rust-src
   tar
   xz
-
-  # html docs
-  graphviz
-  imagemagick
-  python-sphinx
-  python-yaml
-  texlive-latexextra
 )
 options=(
   !debug
@@ -36,7 +29,6 @@ _srcname=linux-${pkgver%.*}
 _srctag=v${pkgver%.*}-${pkgver##*.}
 source=(
   https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/${_srcname}.tar.{xz,sign}
-  $url/releases/download/$_srctag/linux-$_srctag.patch.zst{,.sig}
   config  # the main kernel config file
 )
 
