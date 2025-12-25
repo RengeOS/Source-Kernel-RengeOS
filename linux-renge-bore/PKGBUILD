@@ -110,7 +110,7 @@ prepare() {
 
   echo "Setting version..."
   echo "-$pkgrel" > localversion.10-pkgrel
-  echo "${pkgbase#linux-renge}" > localversion.20-pkgname
+  echo "-${pkgbase}" > localversion.20-pkgname
 
   local src
   for src in "${source[@]}"; do
