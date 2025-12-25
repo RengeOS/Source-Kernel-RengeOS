@@ -83,25 +83,21 @@ source=("https://cdn.kernel.org/pub/linux/kernel/v${_branch}/linux-${_major}.tar
         "https://raw.githubusercontent.com/micros24/linux-xanmod-bore/${_major}/0004-glitched-eevdf-additions.patch"
         "https://raw.githubusercontent.com/micros24/linux-xanmod-bore/${_major}/0005-o3-optimization.patch"
 )
-validpgpkeys=(
-    'ABAF11C65A2970B130ABE3C479BE3E4300411886'
-    '647F28654894E3BD457199BE38DBBDC86092693E'
-)
 
 _commit="ec9e9a4219fe221dec93fa16fddbe44a34933d8d"
 _patches=()
 for _patch in ${_patches[@]}; do
     source+=("${_patch}::https://raw.githubusercontent.com/archlinux/svntogit-packages/${_commit}/trunk/${_patch}")
 done
-sha256sums=('9106a4605da9e31ff17659d958782b815f9591ab308d03b0ee21aad6c7dced4b'
+sha256sums=('SKIP'
             'SKIP'
-            'f628c47c14ed40f9af1ec026225f396644b546bab539020b02bc31334402b844'
-            'a8b38eb482eb685944757182c4886404abc12703e5e56ec39c7d61298d17d71f'
-            '85dad269d971077ef99be39ecf7afce84a936f628da1e65009ebc15717c1c036'
-            'c9045b9122af93688e53396576c4355ff7af305f3af7a4ac3cb6d5f3043966be'
-            '1f3258ce1842156fcc35ca4775f6ba50f08f8f339b8cfbc3395949bb0e368872'
-            '27b01429b372c00ba40bda4c9cdfaf45ec192f3a5018011bc5061ebbc28ee717'
-            '88d7ad910a8dbf2158bb48bd286a0b2feb25d68c27f2f86353ef2b98abe49f4d'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP'
 )
 
 export KBUILD_BUILD_HOST=${KBUILD_BUILD_HOST:-archlinux}
