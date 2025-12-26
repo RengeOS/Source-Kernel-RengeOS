@@ -1,7 +1,7 @@
 # Maintainer: Gia Phu <crystalforceix@gmail.com>
 
 if [ -z ${_microarchitecture+x} ]; then
-  _microarchitecture=93
+  _microarchitecture=0
 fi
 
 if [ -z ${_use_numa+x} ]; then
@@ -160,8 +160,17 @@ prepare() {
                  --disable RD_ZSTD \
                  --enable RD_LZ4
 
+  echo "Setting Xfs filesystems for kernel..."
+  scripts/config --enable XFS_FS \
+                 --enable XFS_QUOTA \
+                 --enable XFS_POSIX_ACL \
+                 --enable XFS_ONLINE_SCRUB \
+                 --enable XFS_ONLINE_REPAIR \
+                 --disable EXT4_FS
+
   echo "Setting LZ4 compression for modules..."
-  scripts/config --disable MODULE_COMPRESS_NONE \
+  scripts/config --enable MODULE_COMPRESS \
+                 --disable MODULE_COMPRESS_NONE \
                  --disable MODULE_COMPRESS_GZIP \
                  --disable MODULE_COMPRESS_XZ \
                  --disable MODULE_COMPRESS_ZSTD \
