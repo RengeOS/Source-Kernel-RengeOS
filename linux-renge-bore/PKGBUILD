@@ -84,10 +84,6 @@ source=("https://cdn.kernel.org/pub/linux/kernel/v${_branch}/linux-${_major}.tar
         "https://raw.githubusercontent.com/RengeOS/Linux-Xanmod-Bore-Patches/${_major}/0005-o3-optimization.patch"
 )
 
-_patches=()
-for _patch in ${_patches[@]}; do
-    source+=("${_patch}::https://raw.githubusercontent.com/RengeOS/Trunk-Kernel-RengeOS/${_patch}")
-done
 sha256sums=('SKIP'
             'SKIP'
             'SKIP'
@@ -145,6 +141,31 @@ prepare() {
   echo "Setting features for desktop use..."
   scripts/config --set-val CONFIG_BLK_DEV_LOOP_MIN_COUNT 0 \
                  --enable SCHED_BORE
+
+  echo "Setting LZ4 compression for kernel..."
+  scripts/config --disable KERNEL_GZIP \
+                 --disable KERNEL_BZIP2 \
+                 --disable KERNEL_LZMA \
+                 --disable KERNEL_XZ \
+                 --disable KERNEL_LZO \
+                 --disable KERNEL_ZSTD \
+                 --enable KERNEL_LZ4
+
+  echo "Setting LZ4 compression for initramfs..."
+  scripts/config --disable RD_GZIP \
+                 --disable RD_BZIP2 \
+                 --disable RD_LZMA \
+                 --disable RD_XZ \
+                 --disable RD_LZO \
+                 --disable RD_ZSTD \
+                 --enable RD_LZ4
+
+  echo "Setting LZ4 compression for modules..."
+  scripts/config --disable MODULE_COMPRESS_NONE \
+                 --disable MODULE_COMPRESS_GZIP \
+                 --disable MODULE_COMPRESS_XZ \
+                 --disable MODULE_COMPRESS_ZSTD \
+                 --enable MODULE_COMPRESS_LZ4
 
   echo "Setting Tickrate HZ..."
   if [ "$_tickrate_HZ" = "1000" ]; then
@@ -247,10 +268,6 @@ prepare() {
                    --disable NEED_MULTIPLE_NODES \
                    --disable NUMA_BALANCING \
                    --disable NUMA_BALANCING_DEFAULT_ENABLED
-  fi
-
-  if [ "$_compress_modules" = "y" ]; then
-    scripts/config --enable CONFIG_MODULE_COMPRESS_ZSTD
   fi
 
   msg2 "Replacing Debian TOMOYO configuration with upstream Arch Linux..."
