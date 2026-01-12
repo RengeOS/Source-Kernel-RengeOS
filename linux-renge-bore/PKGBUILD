@@ -27,7 +27,7 @@ if [ -z ${_localmodcfg} ]; then
 fi
 
 if [ -z ${_tickrate_HZ+x} ]; then
-  _tickrate_HZ=500
+  _tickrate_HZ=1000
 fi
 
 if [ -z ${_tickrate+x} ]; then
@@ -48,7 +48,7 @@ fi
 
 pkgbase=linux-renge-bore
 _major=6.18
-pkgver=${_major}.2
+pkgver=${_major}.4
 _branch=6.x
 xanmod=1
 _revision=
@@ -77,15 +77,13 @@ _srcname="linux-${pkgver}-xanmod${xanmod}"
 source=("https://cdn.kernel.org/pub/linux/kernel/v${_branch}/linux-${_major}.tar.xz"
         "patch-${pkgver}-xanmod${xanmod}${_revision}.xz::https://sourceforge.net/projects/xanmod/files/releases/${_sf_branch}/${pkgver}-xanmod${xanmod}${_revision}/patch-${pkgver}-xanmod${xanmod}.xz"
         choose-gcc-optimization.sh
-        "https://raw.githubusercontent.com/RengeOS/Linux-Xanmod-Bore-Patches/${_major}/0001-bore.patch"
-        "https://raw.githubusercontent.com/RengeOS/Linux-Xanmod-Bore-Patches/${_major}/0002-prefer-the-previous-cpu-for-wakeup-v3.patch"
-        "https://raw.githubusercontent.com/RengeOS/Linux-Xanmod-Bore-Patches/${_major}/0003-glitched-cfs.patch"
-        "https://raw.githubusercontent.com/RengeOS/Linux-Xanmod-Bore-Patches/${_major}/0004-glitched-eevdf-additions.patch"
-        "https://raw.githubusercontent.com/RengeOS/Linux-Xanmod-Bore-Patches/${_major}/0005-o3-optimization.patch"
+        "https://raw.githubusercontent.com/micros24/linux-xanmod-bore/${_major}/0001-bore.patch"
+        "https://raw.githubusercontent.com/micros24/linux-xanmod-bore/${_major}/0002-glitched-cfs.patch"
+        "https://raw.githubusercontent.com/micros24/linux-xanmod-bore/${_major}/0003-glitched-eevdf-additions.patch"
+        "https://raw.githubusercontent.com/micros24/linux-xanmod-bore/${_major}/0004-o3-optimization.patch"
 )
 
 sha256sums=('SKIP'
-            'SKIP'
             'SKIP'
             'SKIP'
             'SKIP'
