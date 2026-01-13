@@ -115,7 +115,7 @@ prepare() {
     patch -Np1 < "../$src"
   done
 
-  cp -vf CONFIGS/x86_64/${_config} .config
+  cp -vf CONFIGS/xanmod/gcc/${_config} .config
 
   echo "Enabling LTO_CLANG_THIN..."
   if [ "${_compiler}" = "clang" ]; then
@@ -327,7 +327,7 @@ build() {
 }
 
 _package() {
-  pkgdesc="Linux Renge with BORE CPU scheduler and tickrate customizations"
+  pkgdesc="Linux Renge LTS with BORE CPU scheduler and tickrate customizations"
   depends=(
     coreutils
     initramfs
