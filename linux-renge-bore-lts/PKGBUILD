@@ -1,0 +1,451 @@
+# Maintainer: Gia Phu <crystalforceix@gmail.com>
+
+if [ -z ${_microarchitecture+x} ]; then
+  _microarchitecture=0
+fi
+
+if [ -z ${_use_numa+x} ]; then
+  _use_numa=n
+fi
+
+if [ -z ${_use_tracers+x} ]; then
+  _use_tracers=y
+fi
+
+if [ "${_compiler}" = "clang" ]; then
+  _compiler_flags="CC=clang HOSTCC=clang LLVM=1 LLVM_IAS=1"
+fi
+
+_config=config
+
+if [ -z ${_compress_modules+x} ]; then
+  _compress_modules=n
+fi
+
+if [ -z ${_localmodcfg} ]; then
+  _localmodcfg=n
+fi
+
+if [ -z ${_tickrate_HZ+x} ]; then
+  _tickrate_HZ=1000
+fi
+
+if [ -z ${_tickrate+x} ]; then
+  _tickrate=tickless
+fi
+
+if [ -z ${_preemptmodel+x} ]; then
+  _preemptmodel=preemptible
+fi
+
+if [ -z ${_use_O3+x} ]; then
+  _use_O3=y
+fi
+
+if [ -z ${_makenconfig} ]; then
+  _makenconfig=n
+fi
+
+pkgbase=linux-renge-bore-lts
+_major=6.12
+pkgver=${_major}.14
+_branch=6.x
+xanmod=1
+_revision=
+_sf_branch=main
+pkgrel=${xanmod}
+pkgdesc='Linux Renge with BORE CPU scheduler and tickrate customizations'
+url="http://www.xanmod.org/"
+arch=('x86_64')
+license=(GPL2)
+makedepends=(
+  bc
+  cpio
+  gettext
+  libelf
+  pahole
+  perl
+  python
+  tar
+  xz
+)
+if [ "${_compiler}" = "clang" ]; then
+  makedepends+=(clang llvm lld)
+fi
+options=('!strip')
+_srcname="linux-${pkgver}-xanmod${xanmod}"
+source=("https://cdn.kernel.org/pub/linux/kernel/v${_branch}/linux-${_major}.tar.xz"
+        "patch-${pkgver}-xanmod${xanmod}${_revision}.xz::https://sourceforge.net/projects/xanmod/files/releases/${_sf_branch}/${pkgver}-xanmod${xanmod}${_revision}/patch-${pkgver}-xanmod${xanmod}.xz"
+        choose-gcc-optimization.sh
+        "https://raw.githubusercontent.com/micros24/linux-xanmod-bore/${_major}/0001-bore.patch"
+        "https://raw.githubusercontent.com/micros24/linux-xanmod-bore/${_major}/0002-glitched-cfs.patch"
+        "https://raw.githubusercontent.com/micros24/linux-xanmod-bore/${_major}/0003-glitched-eevdf-additions.patch"
+        "https://raw.githubusercontent.com/micros24/linux-xanmod-bore/${_major}/0004-o3-optimization.patch"
+)
+
+sha256sums=('SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+)
+
+export KBUILD_BUILD_HOST=${KBUILD_BUILD_HOST:-archlinux}
+export KBUILD_BUILD_USER=${KBUILD_BUILD_USER:-makepkg}
+export KBUILD_BUILD_TIMESTAMP=${KBUILD_BUILD_TIMESTAMP:-$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})}
+
+prepare() {
+  cd linux-${_major}
+
+  patch -Np1 -i ../patch-${pkgver}-xanmod${xanmod}${_revision}
+
+  echo "Setting version..."
+  echo "-$pkgrel" > localversion.10-pkgrel
+  echo "-${pkgbase}" > localversion.20-pkgname
+
+  local src
+  for src in "${source[@]}"; do
+    src="${src%%::*}"
+    src="${src##*/}"
+    src="${src##*/}"
+    [[ $src = *.patch ]] || continue
+    echo "Applying patch $src..."
+    patch -Np1 < "../$src"
+  done
+
+  cp -vf CONFIGS/x86_64/${_config} .config
+
+  echo "Enabling LTO_CLANG_THIN..."
+  if [ "${_compiler}" = "clang" ]; then
+    scripts/config --disable LTO_CLANG_FULL \
+                   --disable LTO_NONE \
+                   --enable LTO \
+                   --enable LTO_CLANG \
+                   --enable ARCH_SUPPORTS_LTO_CLANG \
+                   --enable ARCH_SUPPORTS_LTO_CLANG_THIN \
+                   --enable HAS_LTO_CLANG \
+                   --enable LTO_CLANG_THIN 
+  fi
+
+  echo "Disabling features not needed for desktop use..."
+  scripts/config --disable X86_EXTENDED_PLATFORM \
+                 --disable BLK_DEBUG_FS \
+                 --disable MEMORY_HOTPLUG \
+                 --disable CONFIG_ANDROID_BINDER_IPC \
+                 --disable ACPI_DEBUGGER
+
+  echo "Setting features for desktop use..."
+  scripts/config --set-val CONFIG_BLK_DEV_LOOP_MIN_COUNT 0 \
+                 --enable SCHED_BORE
+
+  echo "Setting LZ4 compression for kernel..."
+  scripts/config --disable KERNEL_GZIP \
+                 --disable KERNEL_BZIP2 \
+                 --disable KERNEL_LZMA \
+                 --disable KERNEL_XZ \
+                 --disable KERNEL_LZO \
+                 --disable KERNEL_ZSTD \
+                 --enable KERNEL_LZ4
+
+  echo "Setting LZ4 compression for initramfs..."
+  scripts/config --disable RD_GZIP \
+                 --disable RD_BZIP2 \
+                 --disable RD_LZMA \
+                 --disable RD_XZ \
+                 --disable RD_LZO \
+                 --disable RD_ZSTD \
+                 --enable RD_LZ4
+
+  echo "Setting Xfs filesystems for kernel..."
+  scripts/config --enable XFS_FS \
+                 --enable XFS_QUOTA \
+                 --enable XFS_POSIX_ACL \
+                 --enable XFS_ONLINE_SCRUB \
+                 --enable XFS_ONLINE_REPAIR \
+                 --disable EXT4_FS
+
+  echo "Setting LZ4 compression for modules..."
+  scripts/config --enable MODULE_COMPRESS \
+                 --disable MODULE_COMPRESS_NONE \
+                 --disable MODULE_COMPRESS_GZIP \
+                 --disable MODULE_COMPRESS_XZ \
+                 --disable MODULE_COMPRESS_ZSTD \
+                 --enable MODULE_COMPRESS_LZ4
+
+  echo "Setting Tickrate HZ..."
+  if [ "$_tickrate_HZ" = "1000" ]; then
+    scripts/config --disable HZ_250 \
+                   --enable HZ_1000
+  elif [ "$_tickrate_HZ" = "500" ]; then
+    scripts/config --disable HZ_250 \
+                   --enable HZ_500
+  elif [ "$_tickrate_HZ" = "250" ]; then
+    scripts/config --disable HZ_250 \
+                   --enable HZ_300
+  elif [ "$_tickrate_HZ" = "100" ]; then
+    scripts/config --disable HZ_250 \
+                   --enable HZ_100
+  fi
+
+  echo "Setting tick type..."
+  if [ "$_tickrate" = "tickless" ]; then
+    scripts/config --disable HZ_PERIODIC \
+                   --disable NO_HZ_IDLE \
+                   --disable CONTEXT_TRACKING_FORCE \
+                   --enable NO_HZ_FULL_NODEF \
+                   --enable NO_HZ_FULL \
+                   --enable NO_HZ \
+                   --enable NO_HZ_COMMON \
+                   --enable CONTEXT_TRACKING
+  elif [ "$_tickrate" = "idle" ]; then
+    scripts/config --disable HZ_PERIODIC \
+                   --disable NO_HZ_FULL \
+                   --enable NO_HZ_IDLE \
+                   --enable NO_HZ \
+                   --enable NO_HZ_COMMON
+  elif [ "$_tickrate" = "constant" ]; then
+    scripts/config --disable NO_HZ_IDLE \
+                   --disable NO_HZ_FULL \
+                   --disable NO_HZ \
+                   --disable NO_HZ_COMMON \
+                   --enable HZ_PERIODIC
+  fi
+
+  echo "Setting preemption model..."
+  if [ "$_preemptmodel" = "preemptible" ]; then
+    scripts/config --disable PREEMPT_NONE \
+                   --disable PREEMPT_VOLUNTARY \
+                   --enable PREEMPT_BUILD \
+                   --enable PREEMPT \
+                   --enable PREEMPT_COUNT \
+                   --enable PREEMPTION \
+                   --enable PREEMPT_DYNAMIC
+  elif [ "$_preemptmodel" = "voluntary" ]; then
+    scripts/config --disable PREEMPT_NONE \
+                   --disable PREEMPT \
+                   --disable PREEMPT_DYNAMIC \
+                   --enable PREEMPT_BUILD \
+                   --enable PREEMPT_VOLUNTARY \
+                   --enable PREEMPT_COUNT \
+                   --enable PREEMPTION
+  elif [ "$_preemptmodel" = "server" ]; then
+    scripts/config --disable PREEMPT_VOLUNTARY \
+                   --disable PREEMPT \
+                   --disable PREEMPTION \
+                   --disable PREEMPT_DYNAMIC \
+                   --enable PREEMPT_NONE_BUILD \
+                   --enable PREEMPT_NONE
+  fi
+
+  if [ "$_use_O3" = "y" ]; then
+    echo "Enabling O3..."
+    scripts/config --disable CC_OPTIMIZE_FOR_PERFORMANCE \
+                   --enable CC_OPTIMIZE_FOR_PERFORMANCE_O3
+  fi
+
+  scripts/config --enable STACK_VALIDATION
+
+  scripts/config --enable IKCONFIG \
+                 --enable IKCONFIG_PROC
+
+  scripts/config --enable ANDROID_BINDERFS
+  scripts/config --enable ANDROID_BINDER_IPC
+
+  if [ "$_use_tracers" = "y" ]; then
+    echo "Enabling CONFIG_FTRACE..."
+    scripts/config --enable FTRACE \
+                   --enable FUNCTION_TRACER \
+                   --enable STACK_TRACER
+  fi
+
+  if [ "$_use_numa" = "n" ]; then
+    echo "Disabling NUMA..."
+    scripts/config --disable NUMA \
+                   --disable AMD_NUMA \
+                   --disable X86_64_ACPI_NUMA \
+                   --disable NODES_SPAN_OTHER_NODES \
+                   --disable NUMA_EMU \
+                   --disable USE_PERCPU_NUMA_NODE_ID \
+                   --disable ACPI_NUMA \
+                   --disable ARCH_SUPPORTS_NUMA_BALANCING \
+                   --disable NODES_SHIFT \
+                   --undefine NODES_SHIFT \
+                   --disable NEED_MULTIPLE_NODES \
+                   --disable NUMA_BALANCING \
+                   --disable NUMA_BALANCING_DEFAULT_ENABLED
+  fi
+
+  msg2 "Replacing Debian TOMOYO configuration with upstream Arch Linux..."
+  scripts/config --set-str CONFIG_SECURITY_TOMOYO_POLICY_LOADER      "/usr/bin/tomoyo-init"
+  scripts/config --set-str CONFIG_SECURITY_TOMOYO_ACTIVATION_TRIGGER "/usr/lib/systemd/systemd"
+
+  if [ "$_microarchitecture" -ne "0" ]; then
+    ../choose-gcc-optimization.sh $_microarchitecture
+  fi
+
+  for _myconfig in "${SRCDEST}/myconfig" "${HOME}/.config/linux-xanmod/myconfig" "${XDG_CONFIG_HOME}/linux-xanmod/myconfig" ; do
+    if [ -f "${_myconfig}" ] && [ "$(wc -l <"${_myconfig}")" -gt "0" ]; then
+      if grep -q 'scripts/config' "${_myconfig}"; then
+        echo "Applying myconfig..."
+        bash -x "${_myconfig}"
+      else
+        echo "Using user CUSTOM config..."
+        cp -f "${_myconfig}" .config
+      fi
+      echo
+      break
+    fi
+  done
+
+  if [ "$_localmodcfg" = "y" ]; then
+    if [ -f $HOME/.config/modprobed.db ]; then
+      echo "Running Steven Rostedt's make localmodconfig now"
+      make ${_compiler_flags} LSMOD=$HOME/.config/modprobed.db localmodconfig
+    else
+      echo "No modprobed.db data found"
+      exit 1
+    fi
+  fi
+
+  make ${_compiler_flags} olddefconfig
+
+  make -s kernelrelease > version
+  echo "Prepared %s version %s" "$pkgbase" "$(<version)"
+
+  if [ "$_makenconfig" = "y" ]; then
+    make ${_compiler_flags} nconfig
+  fi
+
+  cat .config > "${SRCDEST}/config.last"
+}
+
+build() {
+  cd linux-${_major}
+  make ${_compiler_flags} -j$(nproc) all
+}
+
+_package() {
+  pkgdesc="Linux Renge with BORE CPU scheduler and tickrate customizations"
+  depends=(
+    coreutils
+    initramfs
+    kmod
+  )
+  optdepends=(
+    'linux-firmware: firmware images needed for some devices'
+    'scx-scheds: to use sched-ext schedulers'
+    'wireless-regdb: to set the correct wireless channels of your country'
+  )
+  provides=(
+    KSMBD-MODULE
+    VIRTUALBOX-GUEST-MODULES
+    WIREGUARD-MODULE
+    NTFS3-MODULE
+  )
+  replaces=(
+    virtualbox-guest-modules-arch
+    wireguard-arch
+  )
+
+  cd linux-${_major}
+  local modulesdir="$pkgdir/usr/lib/modules/$(<version)"
+
+  echo "Installing boot image..."
+  install -Dm644 "$(make -s image_name)" "$modulesdir/vmlinuz"
+
+  echo "$pkgbase" | install -Dm644 /dev/stdin "$modulesdir/pkgbase"
+
+  echo "Installing modules..."
+  make INSTALL_MOD_PATH="$pkgdir/usr" INSTALL_MOD_STRIP=1 \
+    DEPMOD=/doesnt/exist modules_install
+
+  rm "$modulesdir"/build
+}
+
+_package-headers() {
+  pkgdesc="Headers and scripts for building modules for the $pkgdesc kernel"
+  depends=(pahole)
+
+  cd linux-${_major}
+  local builddir="$pkgdir/usr/lib/modules/$(<version)/build"
+
+  echo "Installing build files..."
+  install -Dt "$builddir" -m644 .config Makefile Module.symvers System.map \
+    localversion.* version vmlinux
+  install -Dt "$builddir/kernel" -m644 kernel/Makefile
+  install -Dt "$builddir/arch/x86" -m644 arch/x86/Makefile
+  cp -t "$builddir" -a scripts
+  ln -srt "$builddir" "$builddir/scripts/gdb/vmlinux-gdb.py"
+
+  install -Dt "$builddir/tools/objtool" tools/objtool/objtool
+
+  if [ -f "tools/bpf/resolve_btfids/resolve_btfids" ]; then install -Dt "$builddir/tools/bpf/resolve_btfids" tools/bpf/resolve_btfids/resolve_btfids ; fi
+
+  echo "Installing headers..."
+  cp -t "$builddir" -a include
+  cp -t "$builddir/arch/x86" -a arch/x86/include
+  install -Dt "$builddir/arch/x86/kernel" -m644 arch/x86/kernel/asm-offsets.s
+
+  install -Dt "$builddir/drivers/md" -m644 drivers/md/*.h
+  install -Dt "$builddir/net/mac80211" -m644 net/mac80211/*.h
+
+  install -Dt "$builddir/drivers/media/i2c" -m644 drivers/media/i2c/msp3400-driver.h
+
+  install -Dt "$builddir/drivers/media/usb/dvb-usb" -m644 drivers/media/usb/dvb-usb/*.h
+  install -Dt "$builddir/drivers/media/dvb-frontends" -m644 drivers/media/dvb-frontends/*.h
+  install -Dt "$builddir/drivers/media/tuners" -m644 drivers/media/tuners/*.h
+
+  install -Dt "$builddir/drivers/iio/common/hid-sensors" -m644 drivers/iio/common/hid-sensors/*.h
+
+  echo "Installing KConfig files..."
+  find . -name 'Kconfig*' -exec install -Dm644 {} "$builddir/{}" \;
+
+  echo "Removing unneeded architectures..."
+  local arch
+  for arch in "$builddir"/arch/*/; do
+    [[ $arch = */x86/ ]] && continue
+    echo "Removing $(basename "$arch")"
+    rm -r "$arch"
+  done
+
+  echo "Removing documentation..."
+  rm -r "$builddir/Documentation"
+
+  echo "Removing broken symlinks..."
+  find -L "$builddir" -type l -printf 'Removing %P\n' -delete
+
+  echo "Removing loose objects..."
+  find "$builddir" -type f -name '*.o' -printf 'Removing %P\n' -delete
+
+  echo "Stripping build tools..."
+  local file
+  while read -rd '' file; do
+    case "$(file -Sib "$file")" in
+      application/x-sharedlib\;*)
+        strip -v $STRIP_SHARED "$file" ;;
+      application/x-archive\;*)
+        strip -v $STRIP_STATIC "$file" ;;
+      application/x-executable\;*)
+        strip -v $STRIP_BINARIES "$file" ;;
+      application/x-pie-executable\;*)
+        strip -v $STRIP_SHARED "$file" ;;
+    esac
+  done < <(find "$builddir" -type f -perm -u+x ! -name vmlinux -print0)
+
+  echo "Stripping vmlinux..."
+  strip -v $STRIP_STATIC "$builddir/vmlinux"
+
+  echo "Adding symlink..."
+  mkdir -p "$pkgdir/usr/src"
+  ln -sr "$builddir" "$pkgdir/usr/src/$pkgbase"
+}
+
+pkgname=("${pkgbase}" "${pkgbase}-headers")
+for _p in "${pkgname[@]}"; do
+  eval "package_$_p() {
+    $(declare -f "_package${_p#$pkgbase}")
+    _package${_p#$pkgbase}
+  }"
+done
