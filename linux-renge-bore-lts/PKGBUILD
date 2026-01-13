@@ -16,7 +16,9 @@ if [ "${_compiler}" = "clang" ]; then
   _compiler_flags="CC=clang HOSTCC=clang LLVM=1 LLVM_IAS=1"
 fi
 
-_config=config
+if [ -z ${_config+x} ]; then
+  _config=config_x86-64-v2
+fi
 
 if [ -z ${_compress_modules+x} ]; then
   _compress_modules=n
