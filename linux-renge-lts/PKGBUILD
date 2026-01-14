@@ -79,8 +79,8 @@ _srcname="linux-${pkgver}-xanmod${xanmod}"
 source=("https://cdn.kernel.org/pub/linux/kernel/v${_branch}/linux-${_major}.tar.xz"
         "https://downloads.sourceforge.net/project/xanmod/releases/lts/${pkgver}-xanmod${xanmod}/patch-${pkgver}-xanmod${xanmod}.xz"
         choose-gcc-optimization.sh
-        "https://raw.githubusercontent.com/RengeOS/Linux-Xanmod-Bore-Patches-LTS/0001-glitched-cfs.patch"
-        "https://raw.githubusercontent.com/RengeOS/Linux-Xanmod-Bore-Patches-LTS/0002-o3-optimization.patch"
+        "https://raw.githubusercontent.com/RengeOS/Linux-Xanmod-Patches-LTS/0001-glitched-cfs.patch"
+        "https://raw.githubusercontent.com/RengeOS/Linux-Xanmod-Patches-LTS/0002-o3-optimization.patch"
 )
 
 sha256sums=('SKIP'
@@ -162,7 +162,8 @@ prepare() {
                  --enable XFS_POSIX_ACL \
                  --enable XFS_ONLINE_SCRUB \
                  --enable XFS_ONLINE_REPAIR \
-                 --disable EXT4_FS
+                 --enable EXT4_FS
+                 # --disable EXT4_FS
 
   echo "Setting LZ4 compression for modules..."
   scripts/config --enable MODULE_COMPRESS \
