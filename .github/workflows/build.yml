@@ -1,0 +1,71 @@
+name: Build Renge Kernels
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+concurrency:
+  group: renge-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    container:
+      image: archlinux:latest
+
+    steps:
+      - name: Init Arch Linux
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm base-devel git sudo github-cli
+
+      - name: Create build user
+        run: |
+          useradd -m builder
+          echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Fix permissions
+        run: chown -R builder:builder .
+
+      - name: Build linux-renge-bore
+        run: |
+          su builder -c "
+            cd linux-renge-bore
+            export MAKEFLAGS='-j$(nproc)'
+            makepkg -s --noconfirm
+          "
+
+      - name: Build linux-renge-lts
+        run: |
+          su builder -c "
+            cd linux-renge-lts
+            export MAKEFLAGS='-j$(nproc)'
+            makepkg -s --noconfirm
+          "
+
+      - name: Collect packages
+        run: |
+          mkdir -p out
+          find . -name '*.pkg.tar.zst' -exec mv {} out/ \;
+
+      - name: Delete old release assets
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          for f in out/*.pkg.tar.zst; do
+            gh release delete-asset "${GITHUB_REF_NAME}" "$(basename "$f")" -y || true
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/*.pkg.tar.zst
+
