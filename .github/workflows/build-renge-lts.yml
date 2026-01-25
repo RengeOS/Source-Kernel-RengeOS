@@ -1,0 +1,64 @@
+name: Build Renge LTS Kernel
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: renge-lts
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    container:
+      image: archlinux:latest
+      options: --privileged
+
+    steps:
+      - name: Free disk space (host)
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/local/share/boost
+          sudo docker system prune -af
+          df -h
+
+      - name: Init Arch
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm base-devel git sudo github-cli
+
+      - uses: actions/checkout@v4
+
+      - name: Create build user
+        run: |
+          useradd -m builder
+          echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+          chown -R builder:builder .
+
+      - name: Mount tmpfs
+        run: |
+          mkdir -p /buildtmp
+          mount -t tmpfs -o size=10G tmpfs /buildtmp
+          chown builder:builder /buildtmp
+
+      - name: Build linux-renge-lts
+        run: |
+          su builder -c "
+            cd linux-renge-lts
+            makepkg -s --noconfirm --builddir /buildtmp
+          "
+
+      - name: Collect packages
+        run: |
+          mkdir -p out
+          find . -name '*.pkg.tar.zst' -exec mv {} out/ \;
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: lts-${{ github.run_number }}
+          files: out/*.pkg.tar.zst
+
