@@ -41,17 +41,11 @@ jobs:
           echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
           chown -R builder:builder .
 
-      - name: Mount tmpfs
-        run: |
-          mkdir -p /buildtmp
-          mount -t tmpfs -o size=10G tmpfs /buildtmp
-          chown builder:builder /buildtmp
-
       - name: Build linux-renge-bore
         run: |
           su builder -c "
             cd linux-renge-bore
-            makepkg -s --noconfirm --builddir /buildtmp
+            makepkg -s --noconfirm
           "
 
       - name: Collect packages
@@ -64,3 +58,4 @@ jobs:
         with:
           tag_name: bore-${{ github.run_number }}
           files: out/*.pkg.tar.zst
+
