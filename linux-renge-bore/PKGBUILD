@@ -48,7 +48,7 @@ fi
 
 pkgbase=linux-renge-bore
 _major=6.18
-pkgver=${_major}.6
+pkgver=${_major}.8
 _branch=6.x
 xanmod=1
 _revision=
