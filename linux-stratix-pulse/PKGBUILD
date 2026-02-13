@@ -50,9 +50,9 @@ pkgbase=linux-stratix-pulse
 #pkgbase=linux-custom       # Build kernel with a different name
 pkgver=6.19
 _tag=v6.19
-_srcname=linux-${_major}
 _branch=6.x
 _major=6.19
+_srcname=linux-${_major}
 pkgrel=1
 pkgdesc="Linux Stratix Pulse For RengeOS Based on Mainline"
 arch=(x86_64)
@@ -90,18 +90,16 @@ source=(
   "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0001-bore.patch"
   "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0002-o3-optimization.patch"
   "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0003-glitched-cfs.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0004-glitched-eevdf-additions.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0005-bbr3.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0006-futex.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0007-block-patches.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0008-cachyos-fixes-patches.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0009-cpu-cachyos-patches.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0004-bbr3.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0005-futex.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0006-block-patches.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0007-cachyos-fixes-patches.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0008-cpu-cachyos-patches.patch"
   config         # the main kernel config file
 )
 
 
 sha256sums=('SKIP'
-            'SKIP'
             'SKIP'
             'SKIP'
             'SKIP'
