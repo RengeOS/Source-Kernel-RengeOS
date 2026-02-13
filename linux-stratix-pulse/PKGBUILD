@@ -14,6 +14,8 @@ fi
 
 if [ "${_compiler}" = "clang" ]; then
   _compiler_flags="CC=clang HOSTCC=clang LLVM=1 LLVM_IAS=1"
+  else
+  _compiler_flags=""
 fi
 
 _config=config
@@ -22,7 +24,7 @@ if [ -z ${_compress_modules+x} ]; then
   _compress_modules=n
 fi
 
-if [ -z ${_localmodcfg} ]; then
+if [ -z ${_localmodcfg+x} ]; then
   _localmodcfg=n
 fi
 
@@ -42,7 +44,7 @@ if [ -z ${_use_O3+x} ]; then
   _use_O3=y
 fi
 
-if [ -z ${_makenconfig} ]; then
+if [ -z ${_makenconfig+x} ]; then
   _makenconfig=n
 fi
 
@@ -177,7 +179,7 @@ prepare() {
                  --disable RD_ZSTD \
                  --enable RD_LZ4
 
-  echo "Setting Xfs filesystems for kernel..."
+  echo "Setting XFS filesystems for kernel..."
   scripts/config --enable XFS_FS \
                  --enable XFS_QUOTA \
                  --enable XFS_POSIX_ACL \
@@ -201,8 +203,8 @@ prepare() {
     scripts/config --disable HZ_250 \
                    --enable HZ_500
   elif [ "$_tickrate_HZ" = "250" ]; then
-    scripts/config --disable HZ_250 \
-                   --enable HZ_300
+    scripts/config --disable HZ_500 \
+                   --enable HZ_250
   elif [ "$_tickrate_HZ" = "100" ]; then
     scripts/config --disable HZ_250 \
                    --enable HZ_100
@@ -296,7 +298,7 @@ prepare() {
                    --disable NUMA_BALANCING_DEFAULT_ENABLED
   fi
 
-  msg2 "Replacing Debian TOMOYO configuration with upstream Arch Linux..."
+  echo "Replacing Debian TOMOYO configuration with upstream Arch Linux..."
   scripts/config --set-str CONFIG_SECURITY_TOMOYO_POLICY_LOADER      "/usr/bin/tomoyo-init"
   scripts/config --set-str CONFIG_SECURITY_TOMOYO_ACTIVATION_TRIGGER "/usr/lib/systemd/systemd"
 
@@ -325,8 +327,8 @@ prepare() {
 
 build() {
   cd $_srcname
-  make all
-  make -C tools/bpf/bpftool vmlinux.h feature-clang-bpf-co-re=1
+  make ${_compiler_flags} all
+  make ${_compiler_flags} -C tools/bpf/bpftool vmlinux.h feature-clang-bpf-co-re=1
   make htmldocs SPHINXOPTS=-QT
 }
 
