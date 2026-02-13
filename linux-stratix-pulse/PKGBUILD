@@ -86,7 +86,7 @@ options=(
 )
 
 source=(
-  "https://cdn.kernel.org/pub/linux/kernel/v${_branch)/linux-${_major}.tar.xz"
+  "https://cdn.kernel.org/pub/linux/kernel/v${_branch}/linux-${_major}.tar.xz"
   "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0001-bore.patch"
   "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0002-o3-optimization.patch"
   "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0003-glitched-cfs.patch"
