@@ -1,13 +1,57 @@
-#
+# Maintainer: Gia Phu <crystalforceix@gmail.com>
 # Maintainer: Mikael Eriksson <mikael_eriksson@miffe.org>
 #
 # Based on the linux package by:
 # Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
 
+if [ -z ${_use_numa+x} ]; then
+  _use_numa=n
+fi
+
+if [ -z ${_use_tracers+x} ]; then
+  _use_tracers=y
+fi
+
+if [ "${_compiler}" = "clang" ]; then
+  _compiler_flags="CC=clang HOSTCC=clang LLVM=1 LLVM_IAS=1"
+fi
+
+_config=config
+
+if [ -z ${_compress_modules+x} ]; then
+  _compress_modules=n
+fi
+
+if [ -z ${_localmodcfg} ]; then
+  _localmodcfg=n
+fi
+
+if [ -z ${_tickrate_HZ+x} ]; then
+  _tickrate_HZ=1000
+fi
+
+if [ -z ${_tickrate+x} ]; then
+  _tickrate=tickless
+fi
+
+if [ -z ${_preemptmodel+x} ]; then
+  _preemptmodel=preemptible
+fi
+
+if [ -z ${_use_O3+x} ]; then
+  _use_O3=y
+fi
+
+if [ -z ${_makenconfig} ]; then
+  _makenconfig=n
+fi
+
 pkgbase=linux-stratix-pulse
 #pkgbase=linux-custom       # Build kernel with a different name
-_tag=v6.19
 pkgver=6.19
+_tag=v6.19
+_branch=6.x
+_major=6.19
 pkgrel=1
 pkgdesc="Linux Stratix Pulse For RengeOS Based on Mainline"
 arch=(x86_64)
@@ -39,14 +83,30 @@ options=(
   !debug
   !strip
 )
-_srcname=linux-stratix-pulse
+
 source=(
-  "$_srcname::git+https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git#tag=$_tag"
+  "https://cdn.kernel.org/pub/linux/kernel/v${_branch)/linux-${_major}.tar.xz"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0001-bore.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0002-o3-optimization.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0003-glitched-cfs.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0004-glitched-eevdf-additions.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0005-bbr3.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0006-futex.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0007-block-patches.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0008-cachyos-fixes-patches.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0009-cpu-cachyos-patches.patch"
   config         # the main kernel config file
 )
 
 
 sha256sums=('SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP'
             'SKIP')
 
 export KBUILD_BUILD_HOST=archlinux
@@ -54,12 +114,7 @@ export KBUILD_BUILD_USER=$pkgbase
 export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
 
 prepare() {
-  cd $_srcname
-
-  echo "Getting patches..."
-  git clone https://github.com/RengeOS/Linux-Stratix-Pulse-Patches
-  mv ./Linux-Stratix-Pulse-Patches/* .
-  rm -rf ./Linux-Stratix-Pulse-Patches/
+  cd linux-${_major}
   
   echo "Setting version..."
   echo "-$pkgrel" > localversion.10-pkgrel
@@ -80,8 +135,191 @@ prepare() {
   make olddefconfig
   diff -u ../config .config || :
 
+  echo "Enabling LTO_CLANG_THIN..."
+  if [ "${_compiler}" = "clang" ]; then
+    scripts/config --disable LTO_CLANG_FULL \
+                   --disable LTO_NONE \
+                   --enable LTO \
+                   --enable LTO_CLANG \
+                   --enable ARCH_SUPPORTS_LTO_CLANG \
+                   --enable ARCH_SUPPORTS_LTO_CLANG_THIN \
+                   --enable HAS_LTO_CLANG \
+                   --enable LTO_CLANG_THIN 
+  fi
+
+  echo "Disabling features not needed for desktop use..."
+  scripts/config --disable X86_EXTENDED_PLATFORM \
+                 --disable BLK_DEBUG_FS \
+                 --disable MEMORY_HOTPLUG \
+                 --disable CONFIG_ANDROID_BINDER_IPC \
+                 --disable ACPI_DEBUGGER
+
+  echo "Setting features for desktop use..."
+  scripts/config --set-val CONFIG_BLK_DEV_LOOP_MIN_COUNT 0 \
+                 --enable SCHED_BORE
+
+  echo "Setting LZ4 compression for kernel..."
+  scripts/config --disable KERNEL_GZIP \
+                 --disable KERNEL_BZIP2 \
+                 --disable KERNEL_LZMA \
+                 --disable KERNEL_XZ \
+                 --disable KERNEL_LZO \
+                 --disable KERNEL_ZSTD \
+                 --enable KERNEL_LZ4
+
+  echo "Setting LZ4 compression for initramfs..."
+  scripts/config --disable RD_GZIP \
+                 --disable RD_BZIP2 \
+                 --disable RD_LZMA \
+                 --disable RD_XZ \
+                 --disable RD_LZO \
+                 --disable RD_ZSTD \
+                 --enable RD_LZ4
+
+  echo "Setting Xfs filesystems for kernel..."
+  scripts/config --enable XFS_FS \
+                 --enable XFS_QUOTA \
+                 --enable XFS_POSIX_ACL \
+                 --enable XFS_ONLINE_SCRUB \
+                 --enable XFS_ONLINE_REPAIR \
+                 --disable EXT4_FS
+
+  echo "Setting LZ4 compression for modules..."
+  scripts/config --enable MODULE_COMPRESS \
+                 --disable MODULE_COMPRESS_NONE \
+                 --disable MODULE_COMPRESS_GZIP \
+                 --disable MODULE_COMPRESS_XZ \
+                 --disable MODULE_COMPRESS_ZSTD \
+                 --enable MODULE_COMPRESS_LZ4
+
+  echo "Setting Tickrate HZ..."
+  if [ "$_tickrate_HZ" = "1000" ]; then
+    scripts/config --disable HZ_250 \
+                   --enable HZ_1000
+  elif [ "$_tickrate_HZ" = "500" ]; then
+    scripts/config --disable HZ_250 \
+                   --enable HZ_500
+  elif [ "$_tickrate_HZ" = "250" ]; then
+    scripts/config --disable HZ_250 \
+                   --enable HZ_300
+  elif [ "$_tickrate_HZ" = "100" ]; then
+    scripts/config --disable HZ_250 \
+                   --enable HZ_100
+  fi
+
+  echo "Setting tick type..."
+  if [ "$_tickrate" = "tickless" ]; then
+    scripts/config --disable HZ_PERIODIC \
+                   --disable NO_HZ_IDLE \
+                   --disable CONTEXT_TRACKING_FORCE \
+                   --enable NO_HZ_FULL_NODEF \
+                   --enable NO_HZ_FULL \
+                   --enable NO_HZ \
+                   --enable NO_HZ_COMMON \
+                   --enable CONTEXT_TRACKING
+  elif [ "$_tickrate" = "idle" ]; then
+    scripts/config --disable HZ_PERIODIC \
+                   --disable NO_HZ_FULL \
+                   --enable NO_HZ_IDLE \
+                   --enable NO_HZ \
+                   --enable NO_HZ_COMMON
+  elif [ "$_tickrate" = "constant" ]; then
+    scripts/config --disable NO_HZ_IDLE \
+                   --disable NO_HZ_FULL \
+                   --disable NO_HZ \
+                   --disable NO_HZ_COMMON \
+                   --enable HZ_PERIODIC
+  fi
+
+  echo "Setting preemption model..."
+  if [ "$_preemptmodel" = "preemptible" ]; then
+    scripts/config --disable PREEMPT_NONE \
+                   --disable PREEMPT_VOLUNTARY \
+                   --enable PREEMPT_BUILD \
+                   --enable PREEMPT \
+                   --enable PREEMPT_COUNT \
+                   --enable PREEMPTION \
+                   --enable PREEMPT_DYNAMIC
+  elif [ "$_preemptmodel" = "voluntary" ]; then
+    scripts/config --disable PREEMPT_NONE \
+                   --disable PREEMPT \
+                   --disable PREEMPT_DYNAMIC \
+                   --enable PREEMPT_BUILD \
+                   --enable PREEMPT_VOLUNTARY \
+                   --enable PREEMPT_COUNT \
+                   --enable PREEMPTION
+  elif [ "$_preemptmodel" = "server" ]; then
+    scripts/config --disable PREEMPT_VOLUNTARY \
+                   --disable PREEMPT \
+                   --disable PREEMPTION \
+                   --disable PREEMPT_DYNAMIC \
+                   --enable PREEMPT_NONE_BUILD \
+                   --enable PREEMPT_NONE
+  fi
+
+  if [ "$_use_O3" = "y" ]; then
+    echo "Enabling O3..."
+    scripts/config --disable CC_OPTIMIZE_FOR_PERFORMANCE \
+                   --enable CC_OPTIMIZE_FOR_PERFORMANCE_O3
+  fi
+
+  scripts/config --enable STACK_VALIDATION
+
+  scripts/config --enable IKCONFIG \
+                 --enable IKCONFIG_PROC
+
+  scripts/config --enable ANDROID_BINDERFS
+  scripts/config --enable ANDROID_BINDER_IPC
+
+  if [ "$_use_tracers" = "y" ]; then
+    echo "Enabling CONFIG_FTRACE..."
+    scripts/config --enable FTRACE \
+                   --enable FUNCTION_TRACER \
+                   --enable STACK_TRACER
+  fi
+
+  if [ "$_use_numa" = "n" ]; then
+    echo "Disabling NUMA..."
+    scripts/config --disable NUMA \
+                   --disable AMD_NUMA \
+                   --disable X86_64_ACPI_NUMA \
+                   --disable NODES_SPAN_OTHER_NODES \
+                   --disable NUMA_EMU \
+                   --disable USE_PERCPU_NUMA_NODE_ID \
+                   --disable ACPI_NUMA \
+                   --disable ARCH_SUPPORTS_NUMA_BALANCING \
+                   --disable NODES_SHIFT \
+                   --undefine NODES_SHIFT \
+                   --disable NEED_MULTIPLE_NODES \
+                   --disable NUMA_BALANCING \
+                   --disable NUMA_BALANCING_DEFAULT_ENABLED
+  fi
+
+  msg2 "Replacing Debian TOMOYO configuration with upstream Arch Linux..."
+  scripts/config --set-str CONFIG_SECURITY_TOMOYO_POLICY_LOADER      "/usr/bin/tomoyo-init"
+  scripts/config --set-str CONFIG_SECURITY_TOMOYO_ACTIVATION_TRIGGER "/usr/lib/systemd/systemd"
+
+
+  if [ "$_localmodcfg" = "y" ]; then
+    if [ -f $HOME/.config/modprobed.db ]; then
+      echo "Running Steven Rostedt's make localmodconfig now"
+      make ${_compiler_flags} LSMOD=$HOME/.config/modprobed.db localmodconfig
+    else
+      echo "No modprobed.db data found"
+      exit 1
+    fi
+  fi
+  
+  make ${_compiler_flags} olddefconfig
+
   make -s kernelrelease > version
   echo "Prepared $pkgbase version $(<version)"
+
+
+  if [ "$_makenconfig" = "y" ]; then
+    make ${_compiler_flags} nconfig
+  fi
+
 }
 
 build() {
