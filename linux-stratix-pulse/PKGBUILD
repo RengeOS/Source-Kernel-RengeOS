@@ -89,14 +89,14 @@ options=(
 
 source=(
   "https://cdn.kernel.org/pub/linux/kernel/v${_branch}/linux-${_major}.tar.xz"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0001-bore.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0002-o3-optimization.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0003-glitched-cfs.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0004-bbr3.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0005-futex.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0006-block-patches.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0007-cachyos-fixes-patches.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/main/0008-cpu-cachyos-patches.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_major}/0001-bore.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_major}/0002-o3-optimization.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_major}/0003-glitched-cfs.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_major}/0004-bbr3.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_major}/0005-futex.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_major}/0006-block-patches.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_major}/0007-cachyos-fixes-patches.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_major}/0008-cpu-cachyos-patches.patch"
   config         # the main kernel config file
 )
 
