@@ -48,7 +48,7 @@ if [ -z ${_makenconfig+x} ]; then
   _makenconfig=n
 fi
 
-pkgbase=linux-stratix-pulse-lts
+pkgbase=Linux-Stratix-Pulse-LTS-Patches
 #pkgbase=linux-custom       # Build kernel with a different name
 pkgver=6.12.71
 _tag=v6.12.71
@@ -89,13 +89,13 @@ options=(
 
 source=(
   "https://cdn.kernel.org/pub/linux/kernel/v${_branch}/linux-${_major}.tar.xz"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS/${_major}/0001-futex.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS/${_major}/0002-o3-optimization.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS/${_major}/0003-cachyos-fixes-patches.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS/${_major}/0004-cpu-cachyos-patches.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS/${_major}/0005-glitched-cfs.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS/${_major}/0006-bbr3.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS/${_major}/0007-bore.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS-Patches/${_major}/0001-futex.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS-Patches/${_major}/0002-o3-optimization.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS-Patches/${_major}/0003-cachyos-fixes-patches.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS-Patches/${_major}/0004-cpu-cachyos-patches.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS-Patches/${_major}/0005-glitched-cfs.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS-Patches/${_major}/0006-bbr3.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS-Patches/${_major}/0007-bore.patch"
   config         # the main kernel config file
 )
 
