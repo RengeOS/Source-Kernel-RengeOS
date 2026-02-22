@@ -1,4 +1,4 @@
-# Maintainer: Gia Phu <crystalforceix@gmail.com>
+# Maintainer: Le Nguyen Hoang Gia Phu <crystalforceix@gmail.com>
 
 if [ -z ${_microarchitecture+x} ]; then
   _microarchitecture=0
