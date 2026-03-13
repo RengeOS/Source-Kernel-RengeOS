@@ -50,10 +50,10 @@ fi
 
 pkgbase=linux-stratix-pulse-lts
 #pkgbase=linux-custom       # Build kernel with a different name
-pkgver=6.12.71
-_tag=v6.12.71
+pkgver=6.12.76
 _branch=6.x
-_major=6.12.71
+_major=6.12.76
+_patches=6.12
 _srcname=linux-${_major}
 pkgrel=1
 pkgdesc="Linux Stratix Pulse LTS For RengeOS Based on Kernel LTS"
@@ -89,10 +89,10 @@ options=(
 
 source=(
   "https://cdn.kernel.org/pub/linux/kernel/v${_branch}/linux-${_major}.tar.xz"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS-Patches/${_major}/0001-futex.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS-Patches/${_major}/0002-o3-optimization.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS-Patches/${_major}/0003-bbr3.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS-Patches/${_major}/0004-bore.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS-Patches/${_patches}/0001-futex.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS-Patches/${_patches}/0002-o3-optimization.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS-Patches/${_patches}/0003-bbr3.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-LTS-Patches/${_patches}/0004-bore.patch"
   config         # the main kernel config file
 )
 
@@ -176,8 +176,7 @@ prepare() {
                  --enable XFS_QUOTA \
                  --enable XFS_POSIX_ACL \
                  --enable XFS_ONLINE_SCRUB \
-                 --enable XFS_ONLINE_REPAIR \
-                 --disable EXT4_FS
+                 --enable XFS_ONLINE_REPAIR
 
   echo "Setting LZ4 compression for modules..."
   scripts/config --enable MODULE_COMPRESS \

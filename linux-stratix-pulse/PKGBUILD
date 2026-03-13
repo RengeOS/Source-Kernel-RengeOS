@@ -50,10 +50,10 @@ fi
 
 pkgbase=linux-stratix-pulse
 #pkgbase=linux-custom       # Build kernel with a different name
-pkgver=6.19
-_tag=v6.19
+pkgver=6.19.7
 _branch=6.x
-_major=6.19
+_major=6.19.7
+_patches=6.19
 _srcname=linux-${_major}
 pkgrel=1
 pkgdesc="Linux Stratix Pulse For RengeOS Based on Mainline"
@@ -89,14 +89,14 @@ options=(
 
 source=(
   "https://cdn.kernel.org/pub/linux/kernel/v${_branch}/linux-${_major}.tar.xz"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_major}/0001-bore.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_major}/0002-o3-optimization.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_major}/0003-glitched-cfs.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_major}/0004-bbr3.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_major}/0005-futex.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_major}/0006-block-patches.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_major}/0007-cachyos-fixes-patches.patch"
-  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_major}/0008-cpu-cachyos-patches.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_patches}/0001-bore.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_patches}/0002-o3-optimization.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_patches}/0003-glitched-cfs.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_patches}/0004-bbr3.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_patches}/0005-futex.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_patches}/0006-block-patches.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_patches}/0007-cachyos-fixes-patches.patch"
+  "https://raw.githubusercontent.com/RengeOS/Linux-Stratix-Pulse-Patches/${_patches}/0008-cpu-cachyos-patches.patch"
   config         # the main kernel config file
 )
 
@@ -184,8 +184,7 @@ prepare() {
                  --enable XFS_QUOTA \
                  --enable XFS_POSIX_ACL \
                  --enable XFS_ONLINE_SCRUB \
-                 --enable XFS_ONLINE_REPAIR \
-                 --disable EXT4_FS
+                 --enable XFS_ONLINE_REPAIR
 
   echo "Setting LZ4 compression for modules..."
   scripts/config --enable MODULE_COMPRESS \
